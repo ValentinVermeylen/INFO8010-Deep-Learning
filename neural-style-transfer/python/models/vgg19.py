@@ -1,16 +1,42 @@
-import torch
-import torch.nn as nn
-from torch.autograd import Variable
-import torch.nn.functional as F
+"""
+INFO8010-1 - Deep learning
 
-# Architecture from https://www.kaggle.com/keras/vgg19
-class CNNModel(nn.Module):
-    def __init__(self):  
-        super(CNNModel, self).__init__()  
+University of Liege
+Academic year 2019-2020
+
+Project : Neural style transfer
+
+Authors :
+    - Maxime Meurisse
+    - Adrien Schoffeniels
+    - Valentin Vermeylen
+"""
+
+###########
+# Imports #
+###########
+
+import torch.nn as nn
+
+
+###########
+# Classes #
+###########
+
+class VGG19(nn.Module):
+    """
+    VGG-19 model
+
+    Architecture from : https://www.kaggle.com/keras/vgg19
+    """
+
+    def __init__(self):
+        super(VGG19, self).__init__()
+
         self.conv1 = nn.Conv2d(3, 64, (3, 3))
         self.act = nn.ReLU()
-        self.conv2 = nn.Conv2d(3, 64, (3,3))
-        self.pool = nn.AvgPool2d(kernel_size=(2,2), stride=(2,2))
+        self.conv2 = nn.Conv2d(3, 64, (3, 3))
+        self.pool = nn.AvgPool2d(kernel_size=(2, 2), stride=(2, 2))
 
         self.conv3 = nn.Conv2d(3, 128, (3, 3))
         self.conv4 = nn.Conv2d(3, 128, (3, 3))
@@ -31,7 +57,6 @@ class CNNModel(nn.Module):
         self.conv16 = nn.Conv2d(3, 512, (3, 3))
 
     def forward(self, x):
-
         out = self.conv1(x)
         out = self.act(out)
         out = self.conv2(out)
@@ -75,36 +100,3 @@ class CNNModel(nn.Module):
         out = self.pool(out)
 
         return out
-    
-
-# Content loss
-class ContentLoss(nn.Module):
-    def __init__(self, target):
-        super(ContentLoss, self).__init__()
-        self.target = target.detach()
-    
-    def forward(self, input):
-        self.loss = F.mse_loss(input, self.target)
-        return input
-
-# Style loss
-def gram_matrix(input):
-    # batch size, nb of feature maps, (dimension of feature map)
-    a, b, c, d = input.size()
-
-    features = input.view(a*b, c*d)
-
-    G = torch.mm(features, features.t())
-
-    return G.div(a*b*c*d)
-
-class StyleLoss(nn.Module):
-
-    def __init__(self, target_feature):
-        super(StyleLoss, self).__init__()
-        self.target = gram_matrix(target_feature).detach()
-
-    def forward(self, input):
-        G = gram_matrix(input)
-        self.loss = F.mse_loss(G, self.target)
-        return input
