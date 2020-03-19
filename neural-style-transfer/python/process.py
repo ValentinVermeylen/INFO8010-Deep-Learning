@@ -36,13 +36,14 @@ STYLE_LAYERS_DEFAULT = ['conv_1', 'conv_2', 'conv_3', 'conv_4', 'conv_5']
 # Functions #
 #############
 
-def get_style_model_and_losses(cnn, device, normalization_mean, normalization_std, style_img, content_img, content_layers=CONTENT_LAYERS_DEFAULT, style_layers=STYLE_LAYERS_DEFAULT):
+def get_style_model_and_losses(cnn, device, norm_mean, norm_std, style_img, content_img, content_layers=CONTENT_LAYERS_DEFAULT, style_layers=STYLE_LAYERS_DEFAULT):
     cnn = copy.deepcopy(cnn)
 
     # Normalization module
-    normalization = Normalization(normalization_mean, normalization_std).to(device)
+    normalization = Normalization(norm_mean, norm_std).to(device)
 
-    # Just in order to have an iterable access to or list of content/syle losses
+    # Just in order to have an iterable access to or list of
+    # content/syle losses
     content_losses = []
     style_losses = []
 
@@ -60,9 +61,9 @@ def get_style_model_and_losses(cnn, device, normalization_mean, normalization_st
 
         elif isinstance(layer, nn.ReLU):
             name = 'relu_{}'.format(i)
-            # The in-place version doesn't play very nicely with the ContentLoss
-            # and StyleLoss we insert below. So we replace with out-of-place
-            # ones here.
+            # The in-place version doesn't play very nicely with
+            # the ContentLoss and StyleLoss we insert below.
+            # So we replace with out-of-place ones here.
             layer = nn.ReLU(inplace=False)
 
         elif isinstance(layer, nn.MaxPool2d):
@@ -72,7 +73,9 @@ def get_style_model_and_losses(cnn, device, normalization_mean, normalization_st
             name = 'bn_{}'.format(i)
 
         else:
-            raise RuntimeError('Unrecognized layer: {}'.format(layer.__class__.__name__))
+            raise RuntimeError('Unrecognized layer: {}'.format(
+                layer.__class__.__name__)
+            )
 
         model.add_module(name, layer)
 
@@ -100,21 +103,30 @@ def get_style_model_and_losses(cnn, device, normalization_mean, normalization_st
     return model, style_losses, content_losses
 
 
-def run_style_transfer(cnn, device, normalization_mean, normalization_std, content_img, style_img, input_img, num_steps=300, style_weight=1000000, content_weight=1):
+def run_style_transfer(cnn, device, normalization_mean, normalization_std, content_img, style_img, input_img, num_steps, style_weight, content_weight):
     """
     Run the style transfer.
     """
 
     print('Building the style transfer model...')
 
-    model, style_losses, content_losses = get_style_model_and_losses(cnn, device, normalization_mean, normalization_std, style_img, content_img)
+    model, style_losses, content_losses = get_style_model_and_losses(
+        cnn,
+        device,
+        normalization_mean,
+        normalization_std,
+        style_img,
+        content_img
+    )
     optimizer = get_input_optimizer(input_img)
 
     print('Optimizing...')
+    print('')
 
     run = [0]
+    style_scores, content_scores = list(), list()
 
-    while run[0] <= num_steps:
+    while run[0] < num_steps:
         def closure():
             # Correct the values of updated input image
             input_img.data.clamp_(0, 1)
@@ -138,13 +150,19 @@ def run_style_transfer(cnn, device, normalization_mean, normalization_std, conte
 
             run[0] += 1
 
-            print('[Run {}] STYLE LOSS : {:4f} - CONTENT LOSS : {:4f}'.format(run[0], style_score.item(), content_score.item()))
+            if run[0] % 20 == 0:
+                print('[Run {}] STYLE LOSS : {:4f} - CONTENT LOSS : {:4f}'.format(run[0], style_score.item(), content_score.item()))
+
+            style_scores.append(style_score.item())
+            content_scores.append(content_score.item())
 
             return style_score + content_score
 
         optimizer.step(closure)
 
+    print('')
+
     # Last correction
     input_img.data.clamp_(0, 1)
 
-    return input_img
+    return input_img, style_scores, content_scores

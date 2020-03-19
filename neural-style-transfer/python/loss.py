@@ -26,6 +26,16 @@ import torch.nn.functional as F
 ###########
 
 class ContentLoss(nn.Module):
+    """
+    The content loss is a function that represents a weighted
+    version of the content distance for an individual layer.
+
+    The function takes the feature maps F_{XL} of a layer L in
+    a network processing input X and returns the weighted content
+    distance w_{CL}.D^{L}_{C}(X,C) between the image X and the
+    content image C.
+    """
+
     def __init__(self, target):
         super(ContentLoss, self).__init__()
 
@@ -38,6 +48,12 @@ class ContentLoss(nn.Module):
 
 
 class StyleLoss(nn.Module):
+    """
+    The style loss module is implemented similarly to the content
+    loss module. It will act as a transparent layer in a network
+    that computes the style loss of that layer.
+    """
+
     def __init__(self, target_feature):
         super(StyleLoss, self).__init__()
 

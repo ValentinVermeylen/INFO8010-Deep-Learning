@@ -32,8 +32,14 @@ from PIL import Image
 def img_loader(img_name, loader, device):
     img = Image.open(img_name)
     img = loader(img).unsqueeze(0)
+    img = img.to(device, torch.float)
 
-    return img.to(device, torch.float)
+    # If there are 4 channels (for example alpha channel of PNG images),
+    # we discard it
+    if img.size()[1] > 3:
+        img = img[:, :3, :, :]
+
+    return img
 
 
 def img_show(tensor, unloader, title=None):
@@ -52,6 +58,7 @@ def img_show(tensor, unloader, title=None):
     # We pause a bit so that plots are updated
     plt.pause(0.001)
 
+
 def img_export(tensor, unloader, name):
     # We clone the tensor to not do changes on it
     image = tensor.cpu().clone()
@@ -60,7 +67,7 @@ def img_export(tensor, unloader, name):
     image = image.squeeze(0)
     image = unloader(image)
 
-    image.save('../results/{}.png'.format(name))
+    image.save(name)
 
 
 def get_input_optimizer(input_img):
