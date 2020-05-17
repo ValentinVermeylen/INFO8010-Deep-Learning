@@ -18,10 +18,8 @@ Authors :
 import os
 import glob
 
-# Neural networks with PyTorch
 import torch
 
-# Train or load pre-trained models
 import torchvision.models as models
 
 from images import img_load, img_save
@@ -44,12 +42,14 @@ output_path = 'outputs/'
 
 # Hyperparameters of the technique
 model_name = 'vgg19'
-num_steps = 500
+model_pretrained = True
+
+num_steps = 300
 
 weights = {
     'style': 1_000_000,
     'content': 10,
-    'style_losses': [1] * 5,
+    'style_losses': [0.75, 0.5, 0.2, 0.2, 0.2],
     'content_losses': [1]
 }
 
@@ -83,8 +83,8 @@ if __name__ == '__main__':
 
     # Loads the model (only the features part, we don't need
     # the classifier) and put it in evaluation mode
-    model = getattr(models, model_name)(pretrained=False).features.to(device).eval()
-    print('Model name : {}'.format(model_name))
+    model = getattr(models, model_name)(pretrained=model_pretrained).features.to(device).eval()
+    print('Model name : {} ({})'.format(model_name, 'pretrained' if model_pretrained else 'not pretrained'))
 
     # Set the normalization factor (to normalize the image
     # before sending it into the network)
@@ -140,21 +140,14 @@ if __name__ == '__main__':
                 'content': img_load(content, img_size, device)
             }
 
-            # Create the input image (content image with white noise)
-            img['input'] = torch.randn(img['content'].data.size(), device=device)
+            # Create the input image
+            img['input'] = img['content'].clone()
 
             # Print information
             print('Running the algorithm...')
 
             # Add our loss and normalization modules in the model
-            style_model, losses = add_modules(
-                model,
-                norm_mean,
-                norm_std,
-                img,
-                layers,
-                device
-            )
+            style_model, losses = add_modules(model, norm_mean, norm_std, img, layers, device)
 
             # Run the algorithm
             output, style_scores, content_scores = run(style_model, img, num_steps, weights, losses)
@@ -167,16 +160,24 @@ if __name__ == '__main__':
             ###############
 
             # Get the full output path
-            full_output_path = '{}{}-{}-{}-{}'.format(
+            full_output_path = '{}{}-{}-{}-{}-{}'.format(
                 output_path,
                 os.path.splitext(os.path.basename(style))[0],
                 os.path.splitext(os.path.basename(content))[0],
                 model_name,
+                'pretrained' if model_pretrained else 'notpretrained',
                 num_steps
             )
 
             # Save the image
             img_save(output, full_output_path + '.png')
+
+            # Save losses values
+            with open(full_output_path + '-style-loss.txt', 'w') as f:
+                f.write('\n'.join(list(map(str, style_scores))))
+
+            with open(full_output_path + '-content-loss.txt', 'w') as f:
+                f.write('\n'.join(list(map(str, content_scores))))
 
             # Plot and save a graph with losses evolution
             line_graph(
@@ -189,4 +190,4 @@ if __name__ == '__main__':
             )
 
             # Print general information
-            print('Result saved as {}[.png|.pdf]\n'.format(full_output_path))
+            print('Result saved as {}[.png|.pdf|.txt]\n'.format(full_output_path))

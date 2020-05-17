@@ -15,13 +15,9 @@ Authors :
 # Imports #
 ###########
 
-# Neural networks with PyTorch
 import torch
-
-# Transform PIL images into tensors
 import torchvision.transforms as transforms
 
-# Load and display images
 from PIL import Image
 
 
@@ -44,15 +40,10 @@ def img_load(path, size, device):
     ])
 
     # Open the image
-    img = Image.open(path)
+    img = Image.open(path).convert('RGB')
 
     # Fake batch dimension required to fit network's input dimensions
-    img = loader(img).unsqueeze(0)
-
-    # If there are 4 channels (for example alpha channel
-    # of PNG images), we discard it
-    if img.size()[1] > 3:
-        img = img[:, :3, :, :]
+    img = loader(img)[:3, :, :].unsqueeze(0)
 
     return img.to(device, torch.float)
 
@@ -64,7 +55,7 @@ def img_save(tensor, path):
     """
 
     # We clone the tensor to not do changes on it
-    img = tensor.cpu().clone()
+    img = tensor.cpu().clone().detach()
 
     # Remove the fake batch dimension
     img = img.squeeze(0)
