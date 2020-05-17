@@ -40,7 +40,7 @@ def img_load(path, size, device):
     ])
 
     # Open the image
-    img = Image.open(path).convert('RGB')
+    img = Image.open(path)
 
     # Fake batch dimension required to fit network's input dimensions
     img = loader(img)[:3, :, :].unsqueeze(0)
@@ -54,14 +54,17 @@ def img_save(tensor, path):
     convert it to a PIL image and save it to path.
     """
 
+    # We create the unloader
+    unloader = transforms.ToPILImage()
+
     # We clone the tensor to not do changes on it
-    img = tensor.cpu().clone().detach()
+    img = tensor.cpu().clone()
 
     # Remove the fake batch dimension
     img = img.squeeze(0)
 
     # Transform the copied tensor to PIL image
-    img = transforms.ToPILImage()(img)
+    img = unloader(img)
 
     # Save the image
     img.save(path)

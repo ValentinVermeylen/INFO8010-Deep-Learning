@@ -21,6 +21,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
+from torch.optim.lr_scheduler import StepLR
+
 from losses import ContentLoss, StyleLoss
 
 
@@ -28,7 +30,7 @@ from losses import ContentLoss, StyleLoss
 # Functions #
 #############
 
-def add_modules(cnn, mean, std, img, layers, device):
+def add_modules(cnn, mean, std, img, layers, device, replace=False):
     """
     Modifiy the model to integrate new modules.
     """
@@ -61,7 +63,8 @@ def add_modules(cnn, mean, std, img, layers, device):
             name = 'relu_{}'.format(i)
         elif isinstance(layer, nn.MaxPool2d):
             # We replace 'MaxPool' layer by 'AvgPool' layer, as suggested by the author
-            layer = nn.AvgPool2d(kernel_size=2, stride=2)
+            if replace:
+                layer = nn.AvgPool2d(2, 2)
 
             name = 'pool_{}'.format(i)
         elif isinstance(layer, nn.BatchNorm2d):
@@ -98,13 +101,16 @@ def add_modules(cnn, mean, std, img, layers, device):
     return model, {'style': style_losses, 'content': content_losses}
 
 
-def run(model, img, num_steps, weights, losses):
+def run(model, img, num_steps, weights, losses, sched):
     """
     Run the Gatys et al. algorithm.
     """
 
     # Adds the input image to the gradient descent
     optimizer = optim.LBFGS([img['input'].requires_grad_()])
+
+    # Set a decaying learning rate
+    scheduler = StepLR(optimizer, step_size=sched['step_size'], gamma=sched['gamma'])
 
     # Save the scores
     style_scores = []
@@ -114,6 +120,9 @@ def run(model, img, num_steps, weights, losses):
 
     while run[0] < num_steps:
         def closure():
+            # Steps in the scheduler
+            scheduler.step()
+
             # Limits the values of the updated image
             img['input'].data.clamp_(0, 1)
 

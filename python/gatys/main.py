@@ -28,24 +28,31 @@ from process import add_modules, run
 from graphs import line_graph
 
 
-##############
-# Parameters #
-##############
+#############
+# Resources #
+#############
 
 # Path to resources (can be a path to a single
 # image or a folder)
 style_path = 'resources/images/style/'
 content_path = 'resources/images/content/'
 
-# Path to export outputs
+# Path to export outputs (must be a folder)
 output_path = 'outputs/'
 
-# Hyperparameters of the technique
+
+###################
+# Hyperparameters #
+###################
+
+# Model
 model_name = 'vgg19'
 model_pretrained = True
 
+# Number of steps
 num_steps = 300
 
+# Weights
 weights = {
     'style': 1_000_000,
     'content': 10,
@@ -53,9 +60,20 @@ weights = {
     'content_losses': [1]
 }
 
+# Layers
 layers = {
-    'content': ['conv_4'],
-    'style': ['conv_1', 'conv_2', 'conv_3', 'conv_4', 'conv_5']
+    'style': ['conv_1', 'conv_2', 'conv_3', 'conv_4', 'conv_5'],
+    'content': ['conv_4']
+}
+
+# Flag to control the replacement of the
+# MaxPool2d layers by AvgPool2d layers
+replace_max_to_avg = False
+
+# Scheduler
+scheduler = {
+    'step_size': 50,
+    'gamma': 0.3
 }
 
 
@@ -140,17 +158,17 @@ if __name__ == '__main__':
                 'content': img_load(content, img_size, device)
             }
 
-            # Create the input image
-            img['input'] = img['content'].clone()
+            # Create the input image (noisy content image)
+            img['input'] = torch.randn(img['content'].data.size(), device=device)
 
             # Print information
             print('Running the algorithm...')
 
             # Add our loss and normalization modules in the model
-            style_model, losses = add_modules(model, norm_mean, norm_std, img, layers, device)
+            style_model, losses = add_modules(model, norm_mean, norm_std, img, layers, device, replace_max_to_avg)
 
             # Run the algorithm
-            output, style_scores, content_scores = run(style_model, img, num_steps, weights, losses)
+            output, style_scores, content_scores = run(style_model, img, num_steps, weights, losses, scheduler)
 
             # Print information
             print('\nThe algorithm was executed successfully !')
@@ -160,12 +178,13 @@ if __name__ == '__main__':
             ###############
 
             # Get the full output path
-            full_output_path = '{}{}-{}-{}-{}-{}'.format(
+            full_output_path = '{}{}-{}-{}-{}-{}-{}'.format(
                 output_path,
                 os.path.splitext(os.path.basename(style))[0],
                 os.path.splitext(os.path.basename(content))[0],
                 model_name,
                 'pretrained' if model_pretrained else 'notpretrained',
+                'avg' if replace_max_to_avg else 'max',
                 num_steps
             )
 
