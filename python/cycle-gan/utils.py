@@ -1,156 +1,96 @@
+"""
+INFO8010-1 - Deep learning
+University of Liège
+Academic year 2019-2020
+Project : neural style transfer
+Authors :
+    - Maxime Meurisse
+    - Adrien Schoffeniels
+    - Valentin Vermeylen
+"""
+
+import os
+from PIL import Image
+from random import randint
+import numpy as np
+
 import torch
 import torch.nn as nn
-import torch.optim as optim
-from torch.optim.lr_scheduler import StepLR
-
-from PIL import Image
 import torchvision.transforms as transforms
-import copy
-from Losses.InitialLosses import ContentLoss, StyleLoss
-
-# Image saver
-def imSave(tensor, filename):
-    image = tensor.cpu()
-    image = image.squeeze(0)
-    image = transforms.ToPILImage()(image)
-    image.save("outputs/"+filename+".png")
 
 
-# Image loader
-def loader(imgName, imSize, device):
-    ld = transforms.Compose([
+# Initializes the weights from N(0,0.02)
+def init_weights(m):
+    classname = m.__class__.__name__
+    # For every convolutional layer in the network
+    if classname.find('Conv') != -1:
+        m.weight.data.normal_(0, 0.02)
+        m.bias.data.fill_(0)
+
+
+# Since our dataset will contain two subsets, we need to create a new dataset 
+# class that respects the pytorch API
+class CGanDataset(torch.utils.data.Dataset):
+
+    def __init__(self, transform, path1, path2):
+        # path1 and path2 are the paths to the two subsets of images
+        self.transform = transform
+        self.imgs1 = [os.path.join(path1, i) for i in os.listdir(path1)]
+        self.imgs2 = [os.path.join(path2, i) for i in os.listdir(path2)]
+
+    def __getitem__(self, index):
+        img1 = self.transform(Image.open(self.imgs1[index%len(self.imgs1)]))
+        img2 = self.transform(Image.open(self.imgs2[index%len(self.imgs2)]))
+        return {"A": img1, "B": img2}
+    
+    def __len__(self):
+        return max(len(self.imgs1), len(self.imgs2))
+
+
+# Loads the dataset for testing and training. 
+def load_datasets(imSize, datasetName):
+    transform = transforms.Compose([
         transforms.Resize([imSize, imSize]),
         transforms.ToTensor()
     ])
-
-    img = Image.open(imgName)
-    img = ld(img).unsqueeze(0)
-    img = img.to(device, torch.float)
-    # If there are 4 channels (for example alpha channel of PNG images),
-    # we discard it
-    if img.size()[1] > 3:
-        img = img[:, :3, :, :]
-    return img
+    return CGanDataset(transform, datasetName+'A', datasetName+'B')
 
 
-# Image normalizer
-class Normalization(nn.Module):
-    def __init__(self, mean, std):
-        super(Normalization, self).__init__()
-        # Change the sizes
-        self.mean = torch.tensor(mean).view(-1,1,1)
-        self.std = torch.tensor(std).view(-1,1,1)
-    
-    def forward(self, x):
-        return (x-self.mean)/self.std
+# Updates the pool with the newImages and returns 
+# len(newImages) images from the pool.
+def update_pool(pool, newImages):
 
-
-# Modifies the model to integrate our modules
-def addModules(mod, mean, std, styleImg, contentImg, 
-                contentLayers, styleLayers, device):
-
-    cnnCopy = copy.deepcopy(mod)
-    normModule = Normalization(mean, std).to(device)
-    model = nn.Sequential(normModule)
-
-    # Will contain the ...
-    contentLosses = []
-    styleLosses = []
-
-    i = 0
-    for layer in cnnCopy.children():
-        if isinstance(layer, nn.Conv2d):
-            i+=1
-            name = f'conv_{i}'
-        elif isinstance(layer, nn.ReLU):
-            name = f'relu_{i}'
-            layer = nn.ReLU(inplace=False)
-        # To change to add mean pooling for example
-        elif isinstance(layer, nn.MaxPool2d):
-            name = f'pool_{i}'
-        elif isinstance(layer, nn.BatchNorm2d):
-            name = f'bn_{i}'
+    toReturn = []
+    # Update the pool
+    for image in newImages:
+        if len(pool) < 50:
+            pool.append(image)
         else:
-            raise RuntimeError(f'Unrecognized layer : {layer.__class__.__name__}')
-        
-        # Add the layer to our model
-        model.add_module(name, layer)
-
-        # Add the content layers at the right place
-        if name in contentLayers:
-            reference = model(contentImg).detach()
-            contentLoss = ContentLoss(reference)
-            model.add_module(f"content_loss_{i}", contentLoss)
-            contentLosses.append(contentLoss)
-        
-        # Add the style layers at the right place
-        if name in styleLayers:
-            reference = model(styleImg).detach()
-            styleLoss = StyleLoss(reference)
-            model.add_module(f"style_loss_{i}", styleLoss)
-            styleLosses.append(styleLoss)
+            index = randint(0, 50-1)
+            pool[index] = image
     
-    # Remove the layers after the last content and style ones
-    for i in range(len(model)-1,-1,-1):
-        if isinstance(model[i], ContentLoss) or isinstance(model[i], StyleLoss):
-            break
-    model = model[:(i+1)]
+    # Fill the returned array
+    for i in range(len(newImages)):
+        index = randint(0, len(pool)-1)
+        toReturn.append(pool[index].unsqueeze(0))
 
-    return model, styleLosses, contentLosses
+    # Concatenate into a single tensor
+    x = torch.Tensor(size=[5]+list(newImages[0].size())).double()
 
-
-# Provides an optimizer for the gradient descent
-def imgOptimizer(img):
-    # Read https://pytorch.org/docs/stable/notes/autograd.html
-    # Must be part of the gradient descent since we are creating this image
-    # iteratively
-    return optim.LBFGS([img.requires_grad_()])
-
-
-def runStyleTransfer(model, inputImg, contentImg, styleImg, numSteps, styleWeight, contentWeight, styleLosses, contentLosses, sLossesWeights, cLossesWeights):
-    
-    # Adds the input image to the gradient descent
-    optimizer = imgOptimizer(inputImg)
-
-    # Set a decaying learning rate
-    scheduler = StepLR(optimizer, step_size=50, gamma=0.3)
-
-    run = [0]
-    while run[0] < numSteps:
-
-        def closure():
-            # Steps in the scheduler
-            scheduler.step()
-
-            # Limits the values of the updates image
-            inputImg.data.clamp_(0,1)
-
-            # Reset the gradients to zero before the backprop
-            optimizer.zero_grad()
-            model(inputImg)
-            styleScore = contentScore = 0
-
-            for id, loss in enumerate(styleLosses):
-                styleScore += loss.loss * sLossesWeights[id]
-            
-            for id, loss in enumerate(contentLosses):
-                contentScore += loss.loss * cLossesWeights[id]
-            
-            styleScore *= styleWeight
-            contentScore *= contentWeight
-
-            loss = styleScore + contentScore
-            loss.backward()
-            
-            run[0] += 1
-            if run[0] % 50 == 0:
-                print(f"run {run}")
-                print(f"Style loss : {styleScore}; Content Loss : {contentScore}\n")
-            
-            return contentScore + styleScore
+    with torch.no_grad():
+        torch.cat(toReturn, out=x)
         
-        optimizer.step(closure)
-    
-    inputImg.data.clamp_(0,1)
+    return x
 
-    return inputImg
+
+# Custom Learning Rate class
+class CustomLR:
+    def __init__(self, nbEpochs, offset):
+        self.nbEpochs = nbEpochs
+        self.offset = offset
+    
+    def step(self, epoch):
+        if 0 < epoch < self.offset:
+            return 1
+        else:
+            return abs(epoch-self.nbEpochs) / (self.nbEpochs-self.offset)

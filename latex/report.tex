@@ -18,7 +18,6 @@
 \usepackage{color}
 \usepackage{hyperref}
 
-\usepackage{caption}
 \usepackage{subcaption}
 
 
@@ -55,14 +54,12 @@
     
     \section{Introduction}
     
-    We decided to tackle the subject of \emph{neural style transfer} for this deep learning project. The basic idea of this subject is to \emph{merge the style of one image and the content of another image}, for example applying the style of an oil painting to a photo of an animal.\\
-    
-    An example of such an application is shown in Figure \ref{fig:introduction.example}.\\
+    We decided to tackle the subject of \emph{neural style transfer} for this deep learning project. The basic idea of this subject is to \emph{merge the style of one image and the content of another image}, for example applying the style of an oil painting to a photo of an animal (Figure \ref{fig:introduction.example}).
     
     \begin{figure}[ht]
         \centering
         \includegraphics[width=0.45\textwidth]{resources/png/example.png}
-        \caption{An example of neural style transfer product \cite{towardsdatascience.com}.}
+        \caption{An example of neural style transfer (Gatys et al. technique) \cite{towardsdatascience.com}.}
         \label{fig:introduction.example}
     \end{figure}
     
@@ -70,22 +67,22 @@
     
     The applications are many and varied. We have chosen to focus on the application of merging the style of an image and the content of another image.\\
     
-    To do this, we first started by exploring the technique explained in the paper by Gatys et al. \cite{DBLP:journals/corr/GatysEB15a}. We tried to re-implement this technique ourselves, to improve it, and to vary the different parameters to understand how it works. This method is described in section \ref{methods.gatys} and its results are discussed in section \ref{results.gatys}.\\
+    To do this, we first started by exploring the technique explained in the paper by Gatys et al. \cite{DBLP:journals/corr/GatysEB15a}. We tried to re-implement this technique ourselves, to improve it, and to vary the different parameters to understand how it works. This method is described in section \ref{sec:methods.gatys} and its results are discussed in section \ref{sec:results.gatys}.\\
     
     Secondly, we have looked at the CycleGAN (\emph{Cycle-Consistent Generative Adversarial Networks}) technique introduced in the paper by Zhu et al. \cite{DBLP:journals/corr/ZhuPIE17}. This technique, using generative adversarial networks, is very rich and allows many possible applications.\\
     
-    An example of the application of this network of interest for this project is shown in Figure \ref{fig:introduction.example.cyclegan}.
+    An example of style transfer using CycleGAN is shown in Figure \ref{fig:introduction.example.cyclegan}.
     
     \begin{figure}[ht]
         \centering
         \includegraphics[width=0.45\textwidth]{resources/png/cyclegan-example.png}
-        \caption{An example of neural style transfer produced by CycleGAN \cite{junyanz.github.io}.}
+        \caption{An example of neural style transfer (Zhu et al. technique) \cite{junyanz.github.io}.}
         \label{fig:introduction.example.cyclegan}
     \end{figure}
     
-    We have also tried to re-implement it by ourselves and to vary its different elements. This method is described in section \ref{methods.zhu} and its results are discussed in section \ref{results.zhu}.\\
+    We have also tried to re-implement it by ourselves and to vary its different elements. This method is described in section \ref{sec:methods.zhu} and its results are discussed in section \ref{sec:results.zhu}.\\
     
-    Finally, we tried some extensions in order to dig deeper into the subject : use of different models, techniques to try to control colour, etc. These results are discussed in the corresponding sections of each method. The different difficulties encountered as well as our impressions of this work and our conclusion are explained in section \ref{discussion}.
+    Finally, we tried some extensions in order to dig deeper into the subject : use of different models, techniques to try to control colour, etc. These results are discussed in the corresponding sections of each method. The different difficulties encountered as well as our impressions of this work and our conclusion are explained in section \ref{sec:discussion}.
     
     %%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%
@@ -108,7 +105,7 @@
         \item \cite{DBLP:journals/corr/ZhuPIE17} - Paper by Zhu et al. : a paper that introduces a technique, called CycleGAN, to perform unpaired image-to-image translation.
     \end{itemize}
     
-    We then looked for some papers that could help us better understand the subject and improve our techniques. The field of \emph{style transfer} in deep learning is very rich and its literature very varied. We consulted a wide range of sources but we focused on papers that were most relevant to our implemented techniques.
+    We then looked for some papers that could help us better understand the subject and improve our techniques. The field of style transfer in deep learning is very rich and its literature very varied. We consulted a wide range of sources but we focused on papers that were most relevant to our implemented techniques.
     
     \begin{itemize}
         \item \cite{DBLP:journals/corr/JingYFYS17} - Paper by Jing et al. :  a paper that provides a comprehensive overview of the current progress towards neural style transfer.
@@ -129,7 +126,7 @@
     
     \section{Methods}
     
-    \subsection{Neural style transfer (Gatys et al.)}\label{methods.gatys}
+    \subsection{Neural style transfer (Gatys et al.)}\label{sec:methods.gatys}
     
     The method presented in this section is that of the original paper that introduced neural style transfer. Although style transfer previously existed in a field called \emph{non-photorealistic rendering} and were implemented through \emph{artistic rendering} algorithms \cite{DBLP:journals/corr/JingYFYS17}, they made no use of neural networks for the task and achieved limited performance and results.\\
     
@@ -139,7 +136,7 @@
     
     The realization that made neural style transfer possible for the authors is that the style and content of an image are \emph{separable in a convolutional neural network}.\\
     
-    As for the practical method proposed by the paper, they used the pretrained VGG19 network, consisting of 16 convolutional layers and 5 pooling ones. The responses in a layer $l$ being the features maps of that layer, they can be stored in a matrix $F^l \in \mathcal{R}^{N_l\times M_l}$, where $F_{ij}^l$ is the activation of the $i^{th}$ filter at position $j$ in layer $l$. $N_l$ is the number of distinct filters at layer $l$ and $M_l$ is the size of the feature map (height times width).\\ 
+    As for the practical method proposed by the paper, they used the pre-trained VGG19 network, consisting of 16 convolutional layers and 5 pooling ones. The responses in a layer $l$ being the features maps of that layer, they can be stored in a matrix $F^l \in \mathcal{R}^{N_l\times M_l}$, where $F_{ij}^l$ is the activation of the $i^{th}$ filter at position $j$ in layer $l$, $N_l$ is the number of distinct filters at layer $l$ and $M_l$ is the size of the feature map (height times width).\\ 
     
     The loss that the authors have used in their work is the following one :
     \begin{equation}\label{eq:gatys.loss}
@@ -166,19 +163,15 @@
     
     \subsubsection{Implementation}
     
-    We tried to implement this technique by ourselves with PyTorch. In order to correct our errors and improve our implementation, we used the \cite{pytorch.org} and \cite{nextjournal.com} tutorials. Our basic implementation is as faithful as possible to the paper \cite{DBLP:journals/corr/GatysEB15a} : we have taken VGG19 and inserted the new layers at the same places, we have taken the same values of the $\alpha$ and $\beta$ parameters, etc. We varied all these parameters afterwards.\\
+    We tried to implement this technique by ourselves with PyTorch. In order to correct our errors and improve our implementation, we used the \cite{pytorch.org} and \cite{nextjournal.com} tutorials. Our basic implementation is as faithful as possible to the paper \cite{DBLP:journals/corr/GatysEB15a} : we have taken VGG19 and inserted the new layers at the same places, we have taken the same values of the $\alpha$ and $\beta$ parameters, etc. We varied all these parameters afterwards. We didn't need to build up a large dataset of images (since we do not need to train VGG19); we simply downloaded images of style and content from the Internet.
     
-    We didn't need to build up a large dataset of images for this technique; we simply downloaded images of style and content from the Internet.\\
-    
-    Finally, we took advantage of the university's GPU cluster to get better results (larger images) faster.
-    
-    \subsection{CycleGAN (Zhu et al.)}\label{methods.zhu}
+    \subsection{CycleGAN (Zhu et al.)}\label{sec:methods.zhu}
     
     CycleGAN is neural networks that allows to perform \emph{unpaired image-to-image translation}. As described on its official web page, "\emph{image-to-image translation is a class of vision and graphics problems where the goal is to learn the mapping between an input image and an output image using a training set of aligned image pairs.}" \cite{junyanz.github.io}. However, in many cases, paired images are not available. This technique has therefore been designed to support unpaired images.\\
     
     Paired images are images with a common context and common elements (for example, an image of horse in a field and an image of a zebra in the same position in more or less an identical field) while unpaired images are images that are not really the same (for example, an image of a horse in a field and an image of a zebra, not in the same position, not in the same size and not in a field).\\
     
-    CycleGAN uses a \emph{generative adversarial network}.
+    CycleGAN uses \emph{generative adversarial networks}.
     
     \subsubsection{Generative models}
     
@@ -205,13 +198,13 @@
     
     \subsubsection{CycleGAN}
     
-    Coming back to the application of neural style transfer, the idea behind the use of a generative adversarial network is \emph{to learn a mapping between the input image and the output image}. However, this technique works for paired images. CycleGAN is a technique that works on unpaired images (or more generally, unpaired input data). For example, it will be able to transform a horse in a photo into a zebra (by applying a striped texture to it) without even needing a zebra image in the same position, with the same background, etc. (i.e. paired images of horse and zebra).\\
+    Coming back to the application of neural style transfer, the idea behind the use of generative adversarial networks is \emph{to learn a mapping between the input image and the output image}. However, this technique works for paired images. CycleGAN is a technique that works on unpaired images (or more generally, unpaired input data). For example, it will be able to transform a horse in a photo into a zebra (by applying a striped texture to it) without even needing a zebra image in the same position, with the same background, etc. (i.e. paired images of horse and zebra).\\
     
     The operating principle of CycleGAN is as follows : let one set of images (for example, images of horses) in an $X$ domain and another different set of images (for example, images of zebras) in a $Y$ domain. The goal is to obtain, via training, a mapping $G : X \rightarrow Y$ and a mapping $F : Y \rightarrow X$. Mathematically, $G$ and $F$ should be inverse to each other and both mapping should be bijections. This hypothesis being made, $G$ and $F$ are trained simultaneously via a \emph{cycle consistency loss} that encourages $F(G(x)) = x$ and $G(F(y)) = y$.\\
     
     The creators of CycleGAN have in fact exploited the fact that a translation must be "\emph{cycle consistent}" using this technique. Concretely, this means, for example, that if a sentence is translated from English into French, the re-translation of the freshly obtained French sentence into English should give the original sentence.\\
     
-    Exploiting this property avoids problems such as \emph{mode collapse} : the model could generate an image which is in the domain of $Y$, and which would therefore be validated by the discriminator, without having any link with the domain $X$ (for example, generating an image of a zebra that is always abd always the same and does not look anything like the image of the original horse).\\
+    Exploiting this property avoids problems such as \emph{mode collapse} : the model could generate an image which is in the domain of $Y$, and which would therefore be validated by the discriminator, without having any link with the domain $X$ (for example, generating an image of a zebra that is always the same and does not look anything like the image of the original horse).\\
     
     In total, the model contains two loss functions : an \emph{adversarial loss function} (since it is a generative adversarial model) and a \emph{cycle consistent loss function} (to take into account the cycle consistent property).\\
     
@@ -234,7 +227,7 @@
     \begin{figure}[ht]
         \centering
         \includegraphics[width=0.45\textwidth]{resources/png/cycle-consistent-loss.png}
-        \caption{Cycle consistent loss \cite{DBLP:journals/corr/ZhuPIE17}}
+        \caption{Cycle consistent loss (CycleGAN) \cite{DBLP:journals/corr/ZhuPIE17}.}
         \label{fig:methods.cyclegan.cycleconsistentloss}
     \end{figure}
     
@@ -246,7 +239,7 @@
     \end{align}
     where $\lambda$ controls the relative importance of the two objectives.
     
-    \subsubsection{Network architectures}
+    \subsubsection{Network architectures}\label{sec:methods.cyclegan.architecture}
     
     Concerning generator architectures, authors of CycleGAN use architecture from Johnson et al. \cite{DBLP:journals/corr/JohnsonAL16} : 6 residual blocks for $128 \times 128$ training images and 9 residual blocks for $256 \times 256$ or higher-resolution training images.\\
     
@@ -254,13 +247,15 @@
     
     \subsubsection{Implementation}
     
-    In order to implement the CycleGAN, we decided to not base ourselves upon a tutorial but instead to try to recreate the models and its training from the paper \cite{DBLP:journals/corr/ZhuPIE17} itself. The network architecture is referenced in the fourth section of this paper and makes reference to the network used in another paper \cite{DBLP:journals/corr/JohnsonAL16}. The exact architecture of the networks of this paper being given in the supplementary and using the discriminator architecture of \cite{DBLP:journals/corr/LedigTHCATTWS16}. We therefore tried to implement our network based on these sources and finished doing so before realizing that the exact architectures of CycleGan were given in the appendix of their paper, located after the sources. We thus used that source to modify the networks created to have the same basis as them. For the generator, we did not modify anything since the architecture we used and modified based on their comment in their own implementation was the same as the one provided in their appendix. For the discriminators, however, we had to modify our architecture since they did not mention that the kernel sizes were of 4, and so we went with the kernel size of 3 referenced by the original paper they based upon, and they used a stride of 2 for all layers, which was not the case in \cite{DBLP:journals/corr/LedigTHCATTWS16}. The number of blocks they used also differed.\\
+    In order to implement the CycleGAN, we decided to not base ourselves upon a tutorial but instead to try to recreate the models and its training from the paper \cite{DBLP:journals/corr/ZhuPIE17} itself. The network architecture is referenced in section \ref{sec:methods.cyclegan.architecture} of this paper and makes reference to the network used in another paper \cite{DBLP:journals/corr/JohnsonAL16}. The exact architecture of the networks of this paper being given in the supplementary and using the discriminator architecture of \cite{DBLP:journals/corr/LedigTHCATTWS16}. We therefore tried to implement our network based on these sources and finished doing so before realizing that the exact architectures of CycleGan were given in the appendix of their paper, located after the sources. We thus used that source to modify the networks created to have the same basis as them. For the generator, we did not modify anything since the architecture we used and modified based on their comment in their own implementation was the same as the one provided in their appendix. For the discriminators, however, we had to modify our architecture since they did not mention that the kernel sizes were of 4, and so we went with the kernel size of 3 referenced by the original paper they based upon, and they used a stride of 2 for all layers, which was not the case in \cite{DBLP:journals/corr/LedigTHCATTWS16}. The number of blocks they used also differed.\\
     
     Finally, after having implemented the network, we went to their GitHub repository for the paper and compared our architecture and theirs, to make sure everything was correct. The only modification we had to make was change some reflection padding to simple padding with 0. They mentioned in their paper they used reflection padding to reduce artifacts but it was not done for all convolutional layers, so we modified that.\\
     
     After the network architectures, we had to acquire a dataset of images and paintings. To do so, we used a bash script found on their GitHub repository that downloads the same datasets as they used in their research. We decided to use landscapes and Monet paintings for the two domains of interest. We also had to create a custom data loader that would return an image of both domain when called, and to do so we looked into PyTorch documentation and StackOverflow questions.\\
     
-    For the optimizer, we reused the same as the authors, and created a learning rate scheduler based on what they wrote in their paper.
+    For the optimizer, we reused the same as the authors, and created a learning rate scheduler acting as they wrote in their paper.\\
+    
+    Finally, we could start the training. The default number of epochs was set to 200, as recommended by the authors. However, we had to change the training dataset, as will be explained in the discussion section. The training first creates fake images by feeding true images to the generators, and then trains the generators by using a loss combining the cycle loss (going to then from a domain to the other should yield an image close to the input one) and the adversarial loss (can we trick the discriminators into thinking a generated image is real), and then trains the discriminators by comparing the output of the discriminators for the true and false images to ground truths.
     
     %%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%
@@ -275,7 +270,7 @@
     
     \section{Results}
     
-    \subsection{Neural style transfer (Gatys et al.)}\label{results.gatys}
+    \subsection{Neural style transfer (Gatys et al.)}\label{sec:results.gatys}
     
     In order to better understand this technique to obtain the best possible results, we tried to vary the different parameters (and hyperparameters) controlling the model. These are listed below :
     
@@ -288,30 +283,37 @@
         \item added layers.
     \end{itemize}
     
-    We discuss each result obtained in a qualitative way by comparing the image obtained with the initial images and in a quantitative way by discussing the loss functions. Since this is a very visual, and therefore very subjective, application, there are few quantitative criteria to discuss. The quality of the result obtained depends very much on the user and his visual feeling.
+    We discuss results obtained in a qualitative way by comparing the image obtained with the initial images and in a quantitative way by discussing the loss functions. Since this is a very visual, and therefore very subjective, application, there are few quantitative criteria to discuss. The quality of the result obtained depends very much on the user and his visual feeling.
     
     \subsubsection{Input image}
     
     The input image is the image that will be generated by the model. It can be initialized in two different ways : either by taking a copy of the content image, or by taking a white noise version of the content image. According to the literature, these two possibilities are equivalent. We have therefore tried both versions.\\
     
-    We chose the \emph{Arc de Triomphe} (Paris) as the reference content image (\ref{fig:input.image.ref.content}) and a painting as the reference style image (\ref{input.image.ref.style}). These two images will be used in further discussions. Obviously, the parameters that give good results for these images will not necessarily give good results for all images. We will discuss this point later.
+    We chose the \emph{Arc de Triomphe} (Paris) as the reference content image (\ref{fig:input.image.ref.content}) and some paintings as reference style images (\ref{fig:input.image.ref.style.1} and \ref{fig:input.image.ref.style.2}). These images will be used in further discussions. Obviously, the parameters that give good results for these images will not necessarily give good results for all images. We will discuss this point later.
     
     \begin{figure}[ht]
         \centering
-        \begin{subfigure}[b]{0.22\textwidth}
+        \begin{subfigure}[b]{0.13\textwidth}
             \centering
             \includegraphics[width=\textwidth]{resources/png/inputs/paris.png}
             \caption{Content image}
             \label{fig:input.image.ref.content}
         \end{subfigure}
         \hfill
-        \begin{subfigure}[b]{0.22\textwidth}
+        \begin{subfigure}[b]{0.13\textwidth}
             \centering
             \includegraphics[width=\textwidth]{resources/png/inputs/sun-trees.png}
-            \caption{Style image}
-            \label{input.image.ref.style}
+            \caption{Style image 1}
+            \label{fig:input.image.ref.style.1}
         \end{subfigure}
-        \caption{Reference images}
+        \hfill
+        \begin{subfigure}[b]{0.13\textwidth}
+            \centering
+            \includegraphics[width=\textwidth]{resources/png/inputs/church.png}
+            \caption{Style image 2}
+            \label{fig:input.image.ref.style.2}
+        \end{subfigure}
+        \caption{Reference images used for discussions.}
     \end{figure}
     
     For this first test, we kept the original implementation, faithful to paper \cite{DBLP:journals/corr/GatysEB15a}, with 300 epochs. The results obtained are presented in Figure \ref{fig:input.image.variations}.
@@ -329,7 +331,7 @@
             \includegraphics[width=\textwidth]{resources/png/inputs/sun-trees-paris-noisy.png}
             \caption{Start with noisy content image}
         \end{subfigure}
-        \caption{Input image variations}
+        \caption{Input image variations.}
         \label{fig:input.image.variations}
     \end{figure}
     
@@ -352,7 +354,7 @@
             \includegraphics[width=\textwidth]{resources/png/model/sun-trees-paris-pretrained.png}
             \caption{Pre-trained model}
         \end{subfigure}
-        \caption{VGG19 model variations}
+        \caption{VGG19 model variations.}
         \label{fig:model.pretrained.variations}
     \end{figure}
     
@@ -377,7 +379,7 @@
             \includegraphics[width=\textwidth]{resources/png/architecture/sun-trees-paris-avgpool.png}
             \caption{Average pooling layers}
         \end{subfigure}
-        \caption{VGG19 model architecture variations}
+        \caption{VGG19 model architecture variations.}
         \label{fig:model.architecture.variations}
     \end{figure}
     
@@ -396,7 +398,7 @@
             \includegraphics[width=\textwidth]{resources/pdf/architecture/sun-trees-paris-avgpool.pdf}
             \caption{Average pooling layers}
         \end{subfigure}
-        \caption{VGG19 model architecture loss functions}
+        \caption{VGG19 model architecture loss functions.}
         \label{fig:model.architecture.loss}
     \end{figure}
     
@@ -417,7 +419,7 @@
             \includegraphics[width=\textwidth]{resources/pdf/architecture/sun-trees-paris-avgpool-scheduler.pdf}
             \caption{Loss functions}
         \end{subfigure}
-        \caption{Average pooling layers with scheduler (VGG19)}
+        \caption{Average pooling layers with scheduler (VGG19).}
         \label{fig:model.architecture.loss.scheduler}
     \end{figure}
     
@@ -442,7 +444,7 @@
             \includegraphics[width=\textwidth]{resources/png/steps/sun-trees-paris-1000.png}
             \caption{1000 epochs}
         \end{subfigure}
-        \caption{Number of steps variations}
+        \caption{Number of steps (epochs) variations.}
         \label{fig:number.steps.variations}
     \end{figure}
     
@@ -451,7 +453,7 @@
     \begin{figure}[ht]
         \centering
         \includegraphics[width=0.45\textwidth]{resources/pdf/steps/sun-trees-paris-1000.pdf}
-        \caption{Loss functions for 1000 epochs}
+        \caption{Loss functions for 1000 epochs.}
         \label{fig:number.steps.loss.functions}
     \end{figure}
     
@@ -495,7 +497,7 @@
             \includegraphics[width=\textwidth]{resources/png/weights/sun-trees-paris-10-7.png}
             \caption{$10^{-7}$}
         \end{subfigure}
-        \caption{Results for different values of ratio $\alpha/\beta$}
+        \caption{Results for different values of ratio $\alpha/\beta$.}
         \label{fig:weights.ratio}
     \end{figure}
     
@@ -524,7 +526,7 @@
             \includegraphics[width=\textwidth]{resources/png/weights/sun-trees-paris-high-decreasing-weights.png}
             \caption{$w = [.75, .5, .2, .2, .2]$}
         \end{subfigure}
-        \caption{Style layers' weights variations}
+        \caption{Style layers' weights variations.}
         \label{fig:weights.style.layers}
     \end{figure}
     
@@ -532,79 +534,89 @@
     
     \subsubsection{Added layers}
     
-    For this section, we have obtained more meaningful results by using another style image. We have therefore replaced our reference style image with the painting shown in Figure \ref{added.layers.ref.style}.
-    
-    \begin{figure}[ht]
-        \centering
-        \begin{subfigure}[b]{0.22\textwidth}
-            \centering
-            \includegraphics[width=\textwidth]{resources/png/inputs/paris.png}
-            \caption{Content image}
-        \end{subfigure}
-        \hfill
-        \begin{subfigure}[b]{0.22\textwidth}
-            \centering
-            \includegraphics[width=\textwidth]{resources/png/inputs/church.png}
-            \caption{Style image}
-            \label{added.layers.ref.style}
-        \end{subfigure}
-        \caption{New reference images}
-    \end{figure}
-    
-    The authors mention in their paper that the layers considered to reconstruct the image of content and the image of style have a significant influence on the result. The content image is rebuilt after a convolutional layer and the style image is rebuilt based on a correlation of several layers. We tried to put them at different places inside the VGG19 model in order to observe the influence on the result obtained abd try to find the best configuration.\\
-    
-    Visiblement j'ai pas pris le bon style je vais les refaire et adapter la discussion que j'avais préparée (pas grave, suffisait de préciser que tu changeais d'image de style, mais comme tu veux)
+    The authors mention in their paper that the layers considered to reconstruct the image of content and the image of style have a significant influence on the result. The content image is rebuilt after a convolutional layer and the style image is rebuilt based on a correlation of several layers. We tried to put them at different places inside the VGG19 model in order to observe the influence on the result obtained and try to find the best configuration. The results are shown in Figure \ref{fig:added.layers}.
     
     \begin{figure}[ht]
         \centering
         \begin{subfigure}[b]{0.1\textwidth}
             \centering
             \includegraphics[width=\textwidth]{resources/png/layers/conv1_conv1.png}
-            \caption{conv1 conv1}
+            \caption{$s$: conv1  $c$: conv1}
+            \label{fig:added.layers.s1.c1}
         \end{subfigure}
         \hfill
         \begin{subfigure}[b]{0.1\textwidth}
             \centering
             \includegraphics[width=\textwidth]{resources/png/layers/conv3_conv1.png}
-            \caption{conv3 conv1}
+            \caption{$s$: conv3 $c$: conv1}
+            \label{fig:added.layers.s3.c1}
         \end{subfigure}
         \hfill
         \begin{subfigure}[b]{0.1\textwidth}
             \centering
             \includegraphics[width=\textwidth]{resources/png/layers/conv5_conv1.png}
-            \caption{conv5 conv1}
+            \caption{$s$: conv5 $c$: conv1}
+            \label{fig:added.layers.s5.c1}
         \end{subfigure}
         \hfill
         \begin{subfigure}[b]{0.1\textwidth}
             \centering
             \includegraphics[width=\textwidth]{resources/png/layers/conv9_conv1.png}
-            \caption{conv9 conv1}
+            \caption{$s$: conv9 $c$: conv1}
+            \label{fig:added.layers.s9.c1}
         \end{subfigure}
         \begin{subfigure}[b]{0.1\textwidth}
             \centering
             \includegraphics[width=\textwidth]{resources/png/layers/conv1_conv3.png}
-            \caption{conv1 conv3}
+            \caption{$s$: conv1 $c$: conv3}
+            \label{fig:added.layers.s1.c3}
         \end{subfigure}
         \hfill
         \begin{subfigure}[b]{0.1\textwidth}
             \centering
             \includegraphics[width=\textwidth]{resources/png/layers/conv1_conv5.png}
-            \caption{conv1 conv5}
+            \caption{$s$: conv1 $c$: conv5}
+            \label{fig:added.layers.s1.c5}
         \end{subfigure}
         \hfill
         \begin{subfigure}[b]{0.1\textwidth}
             \centering
             \includegraphics[width=\textwidth]{resources/png/layers/conv1_conv9.png}
-            \caption{conv1 conv9}
+            \caption{$s$: conv1 $c$: conv9}
+            \label{fig:added.layers.s1.c9}
         \end{subfigure}
         \hfill
         \begin{subfigure}[b]{0.1\textwidth}
             \centering
             \includegraphics[width=\textwidth]{resources/png/layers/conv3_conv9.png}
-            \caption{conv3 conv9}
+            \caption{$s$: conv3 $c$: conv9}
+            \label{fig:added.layers.s3.c9}
         \end{subfigure}
-        \caption{Influence of the position of the construction layers}
+        \caption{Influence of the position of the construction layers ($s$ is the layer after which the style layer is positioned, $c$ is the layer after which the content layer is placed).}
         \label{fig:added.layers}
+    \end{figure}
+    
+    As shown by the figures \ref{fig:added.layers.s1.c1}, \ref{fig:added.layers.s3.c1}, \ref{fig:added.layers.s5.c1} and \ref{fig:added.layers.s9.c1}, the style seems to be better reproduced when the style layer is placed in the beginning of the network. When it's placed after the first convolutional layer, the general color scheme is well respected but the colour shifts are smooth. We do not perceive brush strokes as they are in the original image. As we move the layer along the network, the colour scheme is less and less well-reproduced, but the structure of the style image (the brush strokes) is more and more visible. This is the result expected since the higher convolutional layers capture higher level content. In accordance with these subjective observations, we found that the style loss increases when the layer is moved along the network.\\
+    
+    In the same way, when we move the content layer along the network (as shown by the figures \ref{fig:added.layers.s1.c1}, \ref{fig:added.layers.s1.c3}, \ref{fig:added.layers.s1.c5} and \ref{fig:added.layers.s1.c9}), the representation of the monument becomes less and less precise, since low-level convolutional layers care about details while high-level ones care more about objects and their arrangement, without too much details. This way, placing the content layer  further in the network allows to better apply the style to the image (it does not seem to be a picture with a filter on top anymore). Once again the style loss confirms these observations, as it lessens when the content layer advances in the network.
+    
+    Based on these findings, we manage to get nice results by placing the style layers at different locations in the network (to get the right colours, but also a little bit of the form of the style picture), but giving more weight to the ones that come first, and by placing the content layer around the middle of the network (the exact location can be adapted according to the input images). An example of what can be achieved is shown in Figure \ref{fig:added.layer.result}. 
+    
+    \begin{figure}[ht]
+        \centering
+        \begin{subfigure}[b]{0.22\textwidth}
+            \centering
+            \includegraphics[width=\textwidth]{resources/png/layers/layers_default.png}
+            \caption{Starting architecture}
+        \end{subfigure}
+        \hfill
+        \begin{subfigure}[b]{0.22\textwidth}
+            \centering
+            \includegraphics[width=\textwidth]{resources/png/layers/layers_nicer.png}
+            \caption{Modified architecture}
+            \label{fig:added.layer.result}
+        \end{subfigure}
+        \caption{Comparison of the result that can be achieved by modifying the network architecture with the starting point architecture.}
     \end{figure}
     
     \subsubsection{Final results}
@@ -616,11 +628,11 @@
     \begin{figure*}[ht]
         \centering
         \includegraphics[width=0.85\textwidth]{resources/png/gatys-final.png}
-        \caption{Some results obtained with Gatys et al. technique}
+        \caption{Some results obtained with Gatys et al. technique.}
         \label{fig:final.results.gatys}
     \end{figure*}
     
-    \subsection{CycleGAN (Zhu et al.)}\label{results.zhu}
+    \subsection{CycleGAN (Zhu et al.)}\label{sec:results.zhu}
     
     to do
     
@@ -634,7 +646,7 @@
     % -----
     % A critical discussion of the performance of the neural network, analysis of the potential limitations, tips for future work
     
-    \section{Discussion}\label{discussion}
+    \section{Discussion}\label{sec:discussion}
     
     \subsection{Neural style transfer (Gatys et al.)}
     
@@ -647,6 +659,10 @@
     Finally, we realized how much deep learning techniques, even modern ones, require a lot of work on parameters and training in order to obtain suitable results. Moreover, a series of parameters that give suitable results for one image will not give suitable results for another; it is difficult to generalize the model.\\
     
     We are satisfied with the results we are achieving. It is difficult to judge their quality from a quantitative point of view in view of this very subjective application, but nevertheless, from a qualitative point of view, the results are very correct.
+    
+    \subsection{CycleGAN (Zhu et al.)}
+    
+    The results obtained from CycleGAN were very disappointing. Despite many fixes, the losses for the discriminators were systematically reduced during the training while the ones for the generators stayed near constant.
     
     %%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%
